@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Data.Entity;
 using System.Linq;
 using _04_CRUD.Models;
@@ -14,12 +15,19 @@ namespace _04_CRUD.Repositories
         }
         public DbSet<Product> Products { get; set; }
 
+        
     }
+
+
+   
+
     /*
      * Enable-Migrations
      * Add-Migration initialModel
      * Update-Database
      * 
      */
+
+
    
 }
