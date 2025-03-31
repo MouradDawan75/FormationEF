@@ -17,6 +17,8 @@ namespace _04_CRUD.Repositories
     }
     /*
      * Enable-Migrations
+     * Add-Migration initialModel
+     * Update-Database
      * 
      */
    
