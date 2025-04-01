@@ -11,7 +11,7 @@ namespace _06_FluentApi
             : base("name=MyContext")
         {
             //Afficher dans les logs les requêtes sql générées par EF
-            Database.Log = chaine => Console.WriteLine(chaine);
+            //Database.Log = chaine => Console.WriteLine(chaine);
 
             //Expression Lambda: méthode ano,nyme: (params) => instructions
             Action<string> myMethod = str => Console.WriteLine(str);
