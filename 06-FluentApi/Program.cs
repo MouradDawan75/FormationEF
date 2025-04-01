@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data.Entity;
 using System.Data.Entity.Core.Metadata.Edm;
 using System.Data.Entity.Infrastructure;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -22,7 +23,7 @@ namespace _06_FluentApi
              */
 
             IList<Author> authors = context.Authors.ToList();
-            
+
             IEnumerable<Author> authors2 = context.Authors.ToList();
             /*
              * Chargement des relations:
@@ -86,20 +87,20 @@ namespace _06_FluentApi
 
             //restriction: author dont id = 1
             var query1 = from a in context.Authors
-                        where a.Id == 1
-                        select a;
+                         where a.Id == 1
+                         select a;
 
             foreach (var item in query1) {
                 Console.WriteLine(item.Name);
-                    }
+            }
 
 
             Console.WriteLine("__orderby:");
             //order: liste des courses de author1 orderby courseName
             var query2 = from c in context.Courses
-                        where c.AuthorId == 1
-                        orderby c.Name descending //ascending
-                        select c;
+                         where c.AuthorId == 1
+                         orderby c.Name descending //ascending
+                         select c;
 
             foreach (var item in query2)
             {
@@ -123,7 +124,7 @@ namespace _06_FluentApi
                           */
                          //select new CourseAuthor { CourseName = c.Name, AuthorName = c.Author.Name };
 
-                         select new {CourseName = c.Name, AuthorName = c.Author.Name};
+                         select new { CourseName = c.Name, AuthorName = c.Author.Name };
 
             //le type anonyme: pratique pour stocker des données de manière temporaire
             var student = new { Id = 1, Name = "Marc" };
@@ -142,7 +143,7 @@ namespace _06_FluentApi
 
             foreach (var item in query3) {
 
-                Console.WriteLine(item.CourseName+" "+item.AuthorName);
+                Console.WriteLine(item.CourseName + " " + item.AuthorName);
             }
 
             Console.WriteLine("__groupby:");
@@ -157,10 +158,10 @@ namespace _06_FluentApi
             foreach (var group in query4)
             {
                 //la clé de groupage (FullPrice)
-                Console.WriteLine("Prix: "+group.Key);
-                foreach(var c in group)
+                Console.WriteLine("Prix: " + group.Key);
+                foreach (var c in group)
                 {
-                    Console.WriteLine("\t"+c.Name);
+                    Console.WriteLine("\t" + c.Name);
                 }
             }
 
@@ -181,9 +182,9 @@ namespace _06_FluentApi
 
             //Cross: toutes les ignes de la table de gauche avec chaque ligne de la table de droite
 
-             var query7 = from a in context.Authors
-                          from c in context.Courses
-                          select new { CourseName = c.Name, AuthorName= a.Name };
+            var query7 = from a in context.Authors
+                         from c in context.Courses
+                         select new { CourseName = c.Name, AuthorName = a.Name };
 
 
             Console.WriteLine(">>>>>>>>>>>>> Chainage de méthodes:");
@@ -195,8 +196,106 @@ namespace _06_FluentApi
             Console.WriteLine("__projection:");
 
             var result = context.Courses.Where(c => c.AuthorId == 1)
-                .Select(c => new { CourseName = c.Name, AythorName = c.Author.Name });
+                .Select(c => new { CourseName = c.Name, AuthorName = c.Author.Name });
 
+            Console.WriteLine("__orderby:");
+
+            var result4 = context.Courses.OrderBy(c => c.Name).ToList();
+
+
+            Console.WriteLine("__groupby:");
+
+            var result5 = context.Courses.GroupBy(c => c.FullPrice).ToList();
+
+
+            Console.WriteLine("__join:");
+
+            var result6 = context.Courses
+                .Join(context.Authors, c => c.AuthorId, a => a.Id, 
+                (course, author) => new { CourseName = course.Name, AuthorName = author.Name }).ToList();
+
+
+            Console.WriteLine("__group join:");
+
+            var result7 = context.Authors
+                .GroupJoin(context.Courses, a => a.Id, c => c.AuthorId, (a, c) => new { AuthName = a.Name, NbCourses = c.Count() });
+
+            //Pagination
+            context.Courses.Skip(0).Take(2);
+
+            //2 courses suivants:
+            context.Courses.Skip(2).Take(2);
+
+            //le cours le moins cher
+            context.Courses.OrderBy(c => c.FullPrice).FirstOrDefault();
+
+            Console.WriteLine(">>>>>> Delete en cascade:");
+            /*
+            var authr2 = context.Authors.Find(2);
+            context.Authors.Remove(authr2);
+            context.SaveChanges();
+            */
+
+            Console.WriteLine("auth2 supprimé........");
+
+            #endregion
+
+            #region Commandes Sql natives
+
+            Console.WriteLine(">>>>>>>>>> Commandes sql:");
+
+            //requêter une table
+
+            var auth1 = context.Authors.SqlQuery("select * from Authors where id=@id", new SqlParameter("@id", 1)).SingleOrDefault();
+
+            //requêter la base de données
+            context.Database.SqlQuery<Course>("select * from t_courses");
+
+            #endregion
+
+            #region Transactions
+
+            Console.WriteLine(">>>> mode transactionnel:");
+
+            //Par défaut, EF utilise le autocommit: le mode transactionnel est désactivé: autocommit=true 
+            /*
+            try
+            {
+                context.Courses.Add(new Course { Name = "EF", AuthorId = 1 });
+                context.SaveChanges();
+                context.Courses.Add(new Course { Name = "Android", AuthorId = 3 });
+                context.SaveChanges();
+                context.Courses.Add(new Course { Name = "Tests unitaires", AuthorId = 99 }); // echec
+                context.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+
+            }
+            */
+
+            var transaction = context.Database.BeginTransaction();
+
+            try
+            {
+                context.Courses.Add(new Course { Name = "Java", AuthorId = 1 });
+                context.SaveChanges();
+                context.Courses.Add(new Course { Name = "Spring", AuthorId = 3 });
+                context.SaveChanges();
+                context.Courses.Add(new Course { Name = "Tests unitaires", AuthorId = 2 }); // echec
+                context.SaveChanges();
+
+                transaction.Commit(); // valide toutes commandes
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                transaction.Rollback(); //annule toutes les commandes sql
+            }
+            finally
+            {
+                transaction.Dispose();
+            }
 
             #endregion
 
