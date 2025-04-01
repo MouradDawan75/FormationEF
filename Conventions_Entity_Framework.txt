@@ -1,9 +1,10 @@
-Conventions de Entity Framework:
+Conventions de Entity Framework: 2 options pour les modifier
 
-utiliser les annotations:
+1- utiliser les annotations:
+
 - Table name: [Table('t_products')]
 - nom colonne: [Column("nom")] [MaxLength(256)]
-- Clé primaire: si attribut contient le mot clé: Id -> EF l'utilise comme clé primaire - sinon utiliser l'annotation [Key]
+- Clé primaire: si la classe contient l'attribut: Id -> EF l'utilise comme clé primaire - sinon utiliser l'annotation [Key]
 - Type non nullable: [required]
 - Champs unique: [index (isUnique = true)]
 - clé étrangère: [foreingKey]
@@ -11,4 +12,4 @@ utiliser les annotations:
 
 
 
-utiliser FluentApi: rédefinir la méthode onModelCreating() dans le context
+2- utiliser FluentApi: rédefinir la méthode onModelCreating() dans le context
